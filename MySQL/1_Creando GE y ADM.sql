@@ -1,3 +1,7 @@
+/* Alterando root para conexión con VS*/
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '1234';
+flush privileges;
+
 /* Creacion de usuario GE */
 CREATE USER 'ge'@'localhost' IDENTIFIED BY 'ge';
 GRANT DROP, SELECT, INSERT, UPDATE, DELETE, CREATE, INDEX, ALTER, 
