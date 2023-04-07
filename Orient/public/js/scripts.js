@@ -1,3 +1,27 @@
+
+// This function waits for the page to load before calling getAllContainers, but only on the example.com domain.
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.location.href.indexOf('index.html') > -1) {
+        setUpListeners();
+    }
+});
+
+function setUpListeners() {
+    const sign_in_btn = document.querySelector("#sign-in-btn");
+    const sign_up_btn = document.querySelector("#sign-up-btn");
+    const container = document.querySelector(".container");
+  
+    sign_up_btn.addEventListener("click", () => {
+      container.classList.add("sign-up-mode");
+    });
+  
+    sign_in_btn.addEventListener("click", () => {
+      container.classList.remove("sign-up-mode");
+    });
+}
+  
+
+
 // This function waits for the page to load before adding a click event listener to the menu button.
 // When the button is clicked, it toggles the "active" class on the menu element.
 $(document).ready(function() {
@@ -104,8 +128,10 @@ function showMenu() {
   
 // Add an event listener to the image element that calls the showMenu function when clicked
 document.addEventListener("DOMContentLoaded", function() {
-    var image = document.getElementById("user-image");
-    image.addEventListener("click", showMenu);
+    if (window.location.href.indexOf('index.html') <= -1) {
+        var image = document.getElementById("user-image");
+        image.addEventListener("click", showMenu);
+    }
 });
 
 /**
