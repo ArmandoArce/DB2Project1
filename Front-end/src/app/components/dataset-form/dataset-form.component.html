@@ -1,0 +1,80 @@
+<form (submit)="UploadPhoto()" style="padding-left: 5%; padding-right: 5%; padding-top: 3%;">
+<mat-card class="shipping-card">
+   
+   <mat-card-header>
+      <mat-card-title>Nuevo dataset</mat-card-title>
+   </mat-card-header>
+   
+   <mat-card-content style="width: 40%;">
+      <div class="form-group">
+      <div class="row">
+
+         <div class="col">
+            <mat-form-field appearance="fill" class="full-width">
+               <mat-label>Nombre</mat-label>
+               <input matInput type="text" placeholder="Nombre del dataset" #name>
+            </mat-form-field>
+         </div>
+      </div>
+      <div class="row">
+         <div class="col">
+            <mat-form-field appearance="fill" class="full-width">
+               <mat-label>Descripción</mat-label>
+               <input matInput type="text" placeholder="Descripción" #description>
+            </mat-form-field>
+         </div>
+
+      </div>
+      <div class="row">
+         <div class="col">
+            <mat-form-field appearance="fill" class="full-width">
+               <mat-label>Fecha de registro</mat-label>
+               <input matInput type="date"  value="{{selectedDate}}">
+             
+            </mat-form-field>
+         </div>
+
+      </div>
+
+
+   </div>
+   
+   </mat-card-content>
+</mat-card>
+
+<div style="padding-top: 2%;">
+<mat-card class="shipping-card">
+   <mat-card-header>
+      <mat-card-title>Fotos y videos del dataset</mat-card-title>
+   </mat-card-header>
+   <mat-card-content>
+      <div class="row">
+         <div class="col-xl-0 col-lg-0 col-md-0 col-sm-2 col-xs-6" id="add-photo-container">
+            <input type="file" class="d-none" (change)="onFileSelected($event)" multiple  #photoInput>
+            <img src="../assets/upload.png" alt="No image" width="70" height="70" (click)="photoInput.click()" />
+
+         </div>
+         <div class="row">
+            <div class="col-xl-0 col-lg-0 col-md-0 col-sm-1 col-xs-6" *ngFor="let file of this.images">
+               <div class="card card-photo" >
+                  <div *ngIf = "file.type == 'image/jpeg' || file.type == 'image/png';"> 
+                     <img [src]="file.url" class="img-fluid"  alt="image" class="img-card-top w-100"> 
+                  </div>
+               </div>
+               <div class="row">
+                  <div *ngIf = "file.type == 'video/mp4' || file.type == 'video/mov';">
+                     <video [src]="file.url" controls  class="img-card-top w-100"> </video>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+   </mat-card-content>
+   <mat-card-actions>
+      <button class="btn btn-secondary">
+         Agregar Dataset
+     </button>
+   </mat-card-actions>
+</mat-card>
+</div>
+</form>
