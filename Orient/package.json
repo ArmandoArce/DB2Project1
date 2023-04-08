@@ -1,0 +1,21 @@
+{
+  "name": "baseorient",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "nodemon  server/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "adm-zip": "^0.5.10",
+    "express": "^4.18.2",
+    "fs": "^0.0.1-security",
+    "multer": "^1.4.5-lts.1",
+    "orientjs": "^3.0.11",
+    "os": "^0.1.2",
+    "path": "^0.12.7"
+  }
+}
