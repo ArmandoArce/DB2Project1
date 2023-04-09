@@ -1,0 +1,114 @@
+.comments-container {
+    margin: 0 20px; /* Agrega un margen de 20px a los lados del contenedor */
+  }
+  
+  .comments-section {
+    background-color: #f5f5f5;
+    padding: 20px;
+    border-radius: 5px;
+  }
+  
+  .comments-section h2 {
+    font-size: 24px;
+    margin-bottom: 10px;
+  }
+  
+  .comments-section form {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .comments-section label {
+    font-size: 18px;
+    margin-bottom: 5px;
+  }
+  
+  .comments-section input[type="text"],
+  .comments-section textarea {
+    padding: 10px;
+    margin-bottom: 15px;
+    border-radius: 5px;
+    border: none;
+    box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .comments-section input[type="file"] {
+    margin-bottom: 15px;
+  }
+  
+  .comments-section button[type="submit"] {
+    background-color: #007bff;
+    color: #fff;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .comments-section button[type="submit"]:hover {
+    background-color: #0069d9;
+  }
+  
+  /* Estilos para el botón */
+.button {
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 10px 20px;
+  text-align: center;
+  text-decoration: none;
+  transition-duration: 0.4s;
+}
+
+.button-green {
+  background-color: #4CAF50;
+  color: white;
+}
+
+/* Estilos para el formulario */
+.comment-form {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 10px;
+}
+
+/* Estilos para las etiquetas de los campos */
+.comment-form label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+/* Estilos para el campo de texto */
+.textarea {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  display: block;
+  height: 100px;
+  padding: 5px;
+  resize: none;
+  width: 100%;
+}
+
+/* Estilos para el campo de archivo */
+.file-input {
+  display: block;
+  margin-bottom: 10px;
+}
+
+/* Estilos para el botón de envío */
+.comment-form button[type="submit"] {
+  background-color: #4CAF50;
+  border: none;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  margin-top: 10px;
+  padding: 10px 20px;
+}
+
+  
+
+  
+
+  

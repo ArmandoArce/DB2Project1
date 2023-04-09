@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Datasets</title>
+    
+    <link rel="stylesheet" href="css/font-awesome-4.7.0/css/font-awesome.min.css">
+
+    <link rel="stylesheet" href="css/style.css">
+
+    <script src="js/sweetalert2.all.min.js"></script>
+    <script src="js/jquery-3.6.4.min.js" type="text/javascript"></script>
+    <script src="js/scripts.js" type="text/javascript"></script>
+</head>
+<body class="searchUsers">
+    <section id="menu">
+        <div class="logo">
+            <img src="img/logo2.png" alt="">
+            <h2>DataHive</h2>
+        </div>
+
+        <div class="items">
+            <li><i class="fa fa-pie-chart"></i><a href="dashboard.html">Dashboard</a></li>
+            <li><i class="fa fa-pencil-square-o"></i><a href="upload_dataset.html">Upload Dataset</a></li>
+            <li><i class="fa fa-files-o"></i><a href="search_datasets.html">Search Datasets</a></li>
+            <li><i class="fa fa-inbox"></i><a href="search_users.html">Search Users</a></li>
+            <li><i class="fa fa-eye"></i><a href="view_votes.html">View Votes</a></li>
+            <li><i class="fa fa-inbox"></i><a href="#">Message</a></li>
+        </div>
+    </section>
+
+    <section id="interface">
+        <div class="navigation">
+            <div class="n1">
+                <div>
+                    <i id="menu-btn" class="fa fa-bars"></i>
+                </div>
+                <div class="search">
+                    <i class ="fa fa-search"></i>
+                    <input type="text" id="search-criteria" placeholder="Search">
+                    <button id="get-datasets-by-name-button" class="vote-button">Get users</button>
+                    <select id="search-by">
+                        <option value="all">All</option>
+                        <option value="name">Username</option>
+                        <option value="followers">Followers</option>
+                        <option value="following">Following</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="profile">
+                <div class="toggle-button"><i class="fa fa-bell"></i></div>
+                <img id ="user-image" src="http://localhost:3000/getUserAvatar" alt="">
+                <div id="menu-image" class="items">
+                    <div>Settings</div>
+                    <a href="view_profile.html"><i class="fa fa-user"></i>View profile</a>
+                    <a href="edit_profile.html"><i class="fa fa-pencil-square-o"></i>Edit profile</a>
+                    <a href="index.html" onclick="preventBack();"><i class="fa fa-sign-out"></i>Log out</a>
+                </div>
+                <div id="notifications" class="items"></div>
+            </div>
+        </div>
+
+        <h3 class="i-name">
+            Searching users
+        </h3>
+
+        <div id="result-container"></div>
+    </section>
+    
+</body>
