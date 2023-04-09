@@ -179,18 +179,18 @@ async function checkCommentsByOwner(id_user) {
 
 // Create OrientDB server connection
 var server = OrientDB({
-   host:     'localhost',
-   port:     2424,
-   username: 'root',
-   password: 'Bases2TEC@',
-   useToken: true
+  host:     'localhost',
+  port:     2424,
+  username: 'root',
+  password: '1234',
+  useToken: true
 });
 
 // Use OrientDB server to connect to a specific database
 var db = server.use({
-    name: 'Project1',
-    username: 'admin',
-    password: 'Project1@'
+   name: 'Project1',
+   username: 'admin',
+   password: '1234'
 });
 
 // Create Express app
