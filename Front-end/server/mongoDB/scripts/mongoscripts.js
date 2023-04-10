@@ -5,6 +5,12 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
+document.addEventListener('DOMContentLoaded', function() {
+  if (window.location.href.indexOf('specific_messages.html') > -1) {
+      waitForDatasetElement();
+  }
+});
+
 function waitForDatasetElement() {
   const datasetElem = document.getElementById('currentDataset');
   if (datasetElem) {
@@ -27,6 +33,15 @@ function getComments(currentDataset) {
 }
 
 function submitComment() {
+  const content = document.getElementById('NewContent').value;
+  if (content.trim() === '') {
+    Swal.fire(
+      'Error!',
+      'Please enter a text before submitting',
+      'error'
+    );
+    return;
+  }
   const formData = new FormData();
   formData.append('user', document.getElementById('currentOwner').value);
   formData.append('dataset', document.getElementById('currentDataset').value); 
@@ -45,10 +60,10 @@ function submitComment() {
   }).then(response => {
     Swal.fire({
       title: 'Good job!',
-      text: 'Comment uploaded successfully!',
+      text: 'Text uploaded successfully!',
       icon: 'success',
   }).then(() => {
-      window.location.href = 'search_datasets.html';
+      window.location.href = 'dashboard.html';
   });
   }).catch(error => {
     // Handle the error
@@ -56,6 +71,15 @@ function submitComment() {
 }
 
 function submitResponse() {
+  const content = document.getElementById('myContent').value;
+  if (content.trim() === '') {
+    Swal.fire(
+      'Error!',
+      'Please enter a text before submitting',
+      'error'
+    );
+    return;
+  }
   const formData = new FormData();
   formData.append('user', document.getElementById('currentOwner').value);
   formData.append('dataset', document.getElementById('currentDataset').value); 
@@ -74,7 +98,7 @@ function submitResponse() {
   }).then(response => {
     Swal.fire({
       title: 'Good job!',
-      text: 'Comment uploaded successfully!',
+      text: 'Text uploaded successfully!',
       icon: 'success',
   }).then(() => {
       window.location.href = 'search_datasets.html';

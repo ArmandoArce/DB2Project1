@@ -4,16 +4,19 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
+    <title>Search Datasets</title>
     
     <link rel="stylesheet" href="css/font-awesome-4.7.0/css/font-awesome.min.css">
 
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/mongostyle.css">
 
+    <script src="js/sweetalert2.all.min.js"></script>
     <script src="js/jquery-3.6.4.min.js" type="text/javascript"></script>
     <script src="js/scripts.js" type="text/javascript"></script>
+    <script src="../server/mongoDB/scripts/mongoscripts.js" type="text/javascript"></script>
 </head>
-<body class="view-profile">
+<body class="messages">
     <section id="menu">
         <div class="logo">
             <img src="img/logo2.png" alt="">
@@ -36,6 +39,17 @@
                 <div>
                     <i id="menu-btn" class="fa fa-bars"></i>
                 </div>
+                <div class="search">
+                    <i class ="fa fa-search"></i>
+                    <input type="text" id="search-criteria" placeholder="Search">
+                    <button id="get-datasets-by-name-button" class="vote-button">Get users</button>
+                    <select id="search-by">
+                        <option value="all">All</option>
+                        <option value="name">Username</option>
+                        <option value="followers">Followers</option>
+                        <option value="following">Following</option>
+                    </select>
+                </div>
             </div>
             
             <div class="profile">
@@ -51,8 +65,25 @@
             </div>
         </div>
 
-        <div id="result-container"></div>
-    </section>
+        <h3 class="i-name">
+            Messages
+        </h3>
 
+        <div class="comments-container">
+            <div class="comments-section">
+              <div id="NewCommentForm">
+                <label for="content">New message:</label>
+                <textarea id="NewContent" name="content" class="textarea"></textarea>
+                <input type="hidden" id="currentOwner" value="">
+                <input type="hidden" id="currentChat" value="">
+                <input type="hidden" id="currentDataset" value="">
+                <input type="hidden" id="NewMediaFC" name="media[]" multiple #content>
+                <input type="button" onclick="submitComment()" class="button button-green" value="Send" />
+              </div>
+            </div>
+          </div>
+      
+        <div id="comentarios"></div>
+    </section>
+    
 </body>
-</html>

@@ -71,6 +71,10 @@ body.searchUsers #menu .items li:nth-child(4) {
   border-left: 4px solid #fff;
 }
 
+body.messages #menu .items li:nth-child(6) {
+  border-left: 4px solid #fff;
+}
+
 #menu .items li i {
     color: rgb(134,141,151);
     width: 30px;

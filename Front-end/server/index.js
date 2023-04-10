@@ -29,6 +29,7 @@ const mysql = require('mysql');
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 var currentLoggedInUser = 0;
+var currentLoggedInUsername;
 var newlyCreatedUser = 0;
 const neo4j = require('neo4j-driver');
 const morgan = require('morgan');
@@ -824,10 +825,10 @@ app.get('/getContainersByDescriptionAndUser/:containerDescription', upload.none(
                   </td>
                   <td class="active"><p>${fileContainer.TotalVotes}</p></td>
                   <td>
-                    <div onclick="getRelatedFiles('${fileContainer['@rid'].toString().substring(1)}')" class="edit"><a href="#">Clones</a></div>
+                    <div onclick="copyDataSetById('${fileContainer['@rid'].toString().substring(1)}')" class="edit"><a href="#">Clone</a></div>
                   </td>
                   <td>
-                    <div onclick="getRelatedVotes('${fileContainer['@rid'].toString().substring(1)}')" class="edit"><a href="#">View downloads</a></div>       
+                    <div onclick="getAllDownloads('${fileContainer['@rid'].toString().substring(1)}')" class="edit"><a href="#">View downloads</a></div>       
                   </td>
               </tr>`;
       }
@@ -1100,10 +1101,10 @@ app.get('/getContainersByNameAndUserId/:containerName', upload.none(), function(
                   </td>
                   <td class="active"><p>${fileContainer.TotalVotes}</p></td>
                   <td>
-                    <div onclick="getRelatedFiles('${fileContainer['@rid'].toString().substring(1)}')" class="edit"><a href="#">Clones</a></div>
+                    <div onclick="copyDataSetById('${fileContainer['@rid'].toString().substring(1)}')" class="edit"><a href="#">Clone</a></div>
                   </td>
                   <td>
-                    <div onclick="getRelatedVotes('${fileContainer['@rid'].toString().substring(1)}')" class="edit"><a href="#">View Downloads</a></div>       
+                    <div onclick="getAllDownloads('${fileContainer['@rid'].toString().substring(1)}')" class="edit"><a href="#">View Downloads</a></div>       
                   </td>
               </tr>`;
       }
@@ -1515,7 +1516,7 @@ app.get('/getContainersByUser', upload.none(), function(req, res) {
                   </td>
                   <td class="active"><p>${fileContainer.TotalVotes}</p></td>
                   <td>
-                    <div onclick="copyDataSetById('${fileContainer['@rid'].toString().substring(1)}')" class="edit"><a href="#">Copy</a></div>
+                    <div onclick="copyDataSetById('${fileContainer['@rid'].toString().substring(1)}')" class="edit"><a href="#">Clone</a></div>
                   </td>
                   <td>
                     <div onclick="getAllDownloads('${fileContainer['@rid'].toString().substring(1)}')" class="edit"><a href="#">View downloads</a></div>       
@@ -1709,9 +1710,10 @@ app.post('/copy/:containerId', upload.none(), function(req, res) {
 const connection = mysql.createConnection({
   host: 'localhost',
   user: 'root',
-  password: 'Bases2TEC@',
+  password: '1234',
   database: 'project1'
 });
+
 
 app.use(express.json());
 
@@ -1837,6 +1839,7 @@ app.post('/login', (req, res) => {
       const match = bcrypt.compareSync(PasswordUser, user.PasswordUser);
       if (match) {
         currentLoggedInUser= user.IdUser; 
+        currentLoggedInUsername = user.UsernameUser;
         res.send({ success: true, message: "Logged in" });
       } else {
         res.send({ success: false, message: 'Invalid username or password' });
@@ -1881,29 +1884,39 @@ function getUser(IdUser) {
   });
 }
 
+//see if a user exists
+app.post('/check-username', (req, res) => {
+  const { UsernameUser } = req.body;
+  const query = `SELECT * FROM UserDataHive WHERE UsernameUser = '${UsernameUser}'`;
+
+  connection.query(query, (error, results, fields) => {
+    if (error) throw error;
+
+    if (results.length > 0) {
+      res.send({ exists: true });
+    } else {
+      res.send({ exists: false });
+    }
+  });
+});
+
+
 // Update user endpoint
 app.post('/update-user/', (req, res) => {
   const { NameUser, UsernameUser, LastnameUser, PasswordUser, BirthDate } = req.body;
   const fieldsToUpdate = {};
+
   let query = `UPDATE UserDataHive SET`;
 
   if (NameUser) {
     query += ` NameUser = '${NameUser}',`;
     fieldsToUpdate.NameUser = NameUser;
   }
-
+  
   if (UsernameUser) {
-    connection.query(`SELECT IdUser FROM UserDataHive WHERE UsernameUser = ?`, [UsernameUser], (error, results, fields) => {
-      if (error) throw error;
-
-      if (results.length > 0 && results[0].IdUser !== currentLoggedInUser) {
-        res.status(400).send('Username already exists');
-        return;
-      } else {
-        query += ` UsernameUser = '${UsernameUser}',`;
-        fieldsToUpdate.UsernameUser = UsernameUser;
-      }
-    });
+    query += ` UsernameUser = '${UsernameUser}',`;
+    console.log(query);
+    fieldsToUpdate.UsernameUser = UsernameUser;
   }
 
   if (LastnameUser) {
@@ -1945,12 +1958,12 @@ app.post('/update-user/', (req, res) => {
     const getUserQuery = `SELECT * FROM UserDataHive WHERE IdUser = ${currentLoggedInUser}`;
     connection.query(getUserQuery, (error, results, fields) => {
       if (error) throw error;
-      res.send({ success: true, message: "upload" });
+      res.send({ success: true, message: "User Updated Successfully" });
     });
   });
 });
 
-
+//get al users
 app.get('/getAllUsers', function(req, res) {
   connection.query(`SELECT * FROM UserDataHive WHERE IdUser != ?`, [currentLoggedInUser], function(error, results, fields) {
     if (error) {
@@ -1991,6 +2004,7 @@ app.get('/getAllUsers', function(req, res) {
   });
 });
 
+//get by username
 app.get('/getUsersByUsername/:userName', function(req, res) {
   searching = req.params.userName; 
   console.log(searching);
@@ -2036,6 +2050,322 @@ app.get('/getUsersByUsername/:userName', function(req, res) {
   });
 });
 
+//get followers
+app.get('/getUserFollowers', function(req, res) {
+  const userId = currentLoggedInUser;
+  connection.query(`SELECT * FROM UserFollowers WHERE IdUser = ?`, [userId], async function(error, results, fields) {
+    if (error) {
+      res.status(400).json({"error": error.message});
+      return;
+    }
+    if (results.length === 0) {
+      res.send(`<h2 class="i-subname">You have no followers.</h2>`);
+      return;
+    }
+    let followerIds = results.map(follower => follower.IdFollower);
+    connection.query(`SELECT * FROM UserDataHive WHERE IdUser IN (?)`, [followerIds], async function(error, results, fields) {
+      if (error) {
+        res.status(400).json({"error": error.message});
+        return;
+      }
+      let html = `<h2 class="i-subname">Followers</h2><dir class="board"><table width="100%"><thead><tr><td>User</td><td colspan="3">Real Name</td></tr></thead><tbody>`;
+      for (let i = 0; i < results.length; i++) {
+        const row = results[i];
+        const user = await getUser(row.IdUser);
+        html += `<tr>
+                  <td class="dataset">
+                    <img src="data:${user.avatarMimeType};base64,${user.avatarData.toString('base64')}"/>
+                    <div class="dataset-de">
+                      <h5>${user.UsernameUser}</h5>
+                      <p>${new Date(user.BirthDate).toLocaleString(undefined, { timeZone: 'UTC', hour12: false, timeZoneName: 'short' })}</p>
+                    </div>
+                  </td>
+                  <td class="dataset-des">
+                    <h5>${user.NameUser}</h5>
+                    <p>${user.LastnameUser}</p>
+                  </td>
+                  <td>
+                  <div onclick="getContainersByUserSpecificId('${user.IdUser}')" class="edit"><a href="#">View Datasets</a></div>
+                  </td>
+                </tr>`;
+        if (i == results.length - 1) {
+          html += '</tbody></table></dir>';
+          res.send(html);
+        }
+      }
+    });
+  });
+});
+
+//get followings
+app.get('/getFollowingData', function(req, res) {
+  const userId = currentLoggedInUser;
+  connection.query(`SELECT * FROM UserDataHive WHERE IdUser IN (SELECT IdUser FROM UserFollowers WHERE IdFollower = ?)`, [userId], function(error, results, fields) {
+    if (error) {
+      res.status(400).json({"error": error.message});
+      return;
+    }
+    if (results.length === 0) {
+      res.send('<h2 class="i-subname">You are not following any users.</h2>');
+      return;
+    }
+    Promise.all(results.map(row => getUser(row.IdUser)))
+      .then(users => {
+        let html = `<h2 class="i-subname">Following</h2><dir class="board"><table width="100%"><thead><tr><td>User</td><td colspan="3">Real Name</td></tr></thead><tbody>`;
+        users.forEach(user => {
+          html += `<tr>
+                    <td class="dataset">
+                      <img src="data:${user.avatarMimeType};base64,${user.avatarData.toString('base64')}"/>
+                      <div class="dataset-de">
+                        <h5>${user.UsernameUser}</h5>
+                        <p>${new Date(user.BirthDate).toLocaleString(undefined, { timeZone: 'UTC', hour12: false, timeZoneName: 'short' })}</p>
+                      </div>
+                    </td>
+                    <td class="dataset-des">
+                      <h5>${user.NameUser}</h5>
+                      <p>${user.LastnameUser}</p>
+                    </td>
+                    <td>
+                    <div onclick="getContainersByUserSpecificId('${user.IdUser}')" class="edit"><a href="#">View Datasets</a></div>
+                    </td>
+                  </tr>`;
+        });
+        html += '</tbody></table></dir>';
+        res.send(html);
+      })
+      .catch(error => {
+        res.status(400).send({"error": error.message});
+      });
+  });
+});
+//get followers
+app.get('/getUserFollowersMessages', function(req, res) {
+  const userId = currentLoggedInUser;
+  connection.query(`SELECT * FROM UserFollowers WHERE IdUser = ?`, [userId], async function(error, results, fields) {
+    if (error) {
+      res.status(400).json({"error": error.message});
+      return;
+    }
+    if (results.length === 0) {
+      res.send(`<h2 class="i-subname">You have no followers.</h2>`);
+      return;
+    }
+    let followerIds = results.map(follower => follower.IdFollower);
+    connection.query(`SELECT * FROM UserDataHive WHERE IdUser IN (?)`, [followerIds], async function(error, results, fields) {
+      if (error) {
+        res.status(400).json({"error": error.message});
+        return;
+      }
+      let html = `<h2 class="i-subname">Followers</h2><dir class="board"><table width="100%"><thead><tr><td>User</td><td colspan="3">Real Name</td></tr></thead><tbody>`;
+      for (let i = 0; i < results.length; i++) {
+        const row = results[i];
+        const user = await getUser(row.IdUser);
+        html += `<tr>
+                  <td class="dataset">
+                    <img src="data:${user.avatarMimeType};base64,${user.avatarData.toString('base64')}"/>
+                    <div class="dataset-de">
+                      <h5>${user.UsernameUser}</h5>
+                      <p>${new Date(user.BirthDate).toLocaleString(undefined, { timeZone: 'UTC', hour12: false, timeZoneName: 'short' })}</p>
+                    </div>
+                  </td>
+                  <td class="dataset-des">
+                    <h5>${user.NameUser}</h5>
+                    <p>${user.LastnameUser}</p>
+                  </td>
+                  <td>
+                  <div onclick="getContainersByUserSpecificId('${user.IdUser}')" class="edit"><a href="#">View Datasets</a></div>
+                  </td>
+                  <td>
+                    <div class="edit">
+                      <a href="specific_messages.html?selectedUser=${user.UsernameUser}&currentUser=${currentLoggedInUsername}">Message</a>
+                    </div>
+                  </td>
+                </tr>`;
+        if (i == results.length - 1) {
+          html += '</tbody></table></dir>';
+          res.send(html);
+        }
+      }
+    });
+  });
+});
+
+//get followings
+app.get('/getFollowingDataMessages', function(req, res) {
+  const userId = currentLoggedInUser;
+  connection.query(`SELECT * FROM UserDataHive WHERE IdUser IN (SELECT IdUser FROM UserFollowers WHERE IdFollower = ?)`, [userId], function(error, results, fields) {
+    if (error) {
+      res.status(400).json({"error": error.message});
+      return;
+    }
+    if (results.length === 0) {
+      res.send('<h2 class="i-subname">You are not following any users.</h2>');
+      return;
+    }
+    Promise.all(results.map(row => getUser(row.IdUser)))
+      .then(users => {
+        let html = `<h2 class="i-subname">Following</h2><dir class="board"><table width="100%"><thead><tr><td>User</td><td colspan="3">Real Name</td></tr></thead><tbody>`;
+        users.forEach(user => {
+          html += `<tr>
+                    <td class="dataset">
+                      <img src="data:${user.avatarMimeType};base64,${user.avatarData.toString('base64')}"/>
+                      <div class="dataset-de">
+                        <h5>${user.UsernameUser}</h5>
+                        <p>${new Date(user.BirthDate).toLocaleString(undefined, { timeZone: 'UTC', hour12: false, timeZoneName: 'short' })}</p>
+                      </div>
+                    </td>
+                    <td class="dataset-des">
+                      <h5>${user.NameUser}</h5>
+                      <p>${user.LastnameUser}</p>
+                    </td>
+                    <td>
+                    <div onclick="getContainersByUserSpecificId('${user.IdUser}')" class="edit"><a href="#">View Datasets</a></div>
+                    </td>
+                    <td>
+                      <div class="edit">
+                        <a href="specific_messages.html?selectedUser=${user.UsernameUser}&currentUser=${currentLoggedInUsername}">Message</a>
+                      </div>
+                    </td>
+                  </tr>`;
+        });
+        html += '</tbody></table></dir>';
+        res.send(html);
+      })
+      .catch(error => {
+        res.status(400).send({"error": error.message});
+      });
+  });
+});
+
+app.get('/getAllUsers', function(req, res) {
+  connection.query(`SELECT * FROM UserDataHive WHERE IdUser != ?`, [currentLoggedInUser], function(error, results, fields) {
+    if (error) {
+      res.status(400).json({"error": error.message});
+      return;
+    }
+    let html = `<h2 class="i-subname">Users</h2><dir class="board"><table width="100%"><thead><tr><td>User</td><td colspan="3">Real Name</td></tr></thead><tbody>`;
+    for (let i = 0; i < results.length; i++) {
+      const row = results[i];
+      getUser(row.IdUser).then(user => {
+        html += `<tr>
+                  <td class="dataset">
+                    <img src="data:${user.avatarMimeType};base64,${user.avatarData.toString('base64')}"/>
+                    <div class="dataset-de">
+                      <h5>${user.UsernameUser}</h5>
+                      <p>${new Date(user.BirthDate).toLocaleString(undefined, { timeZone: 'UTC', hour12: false, timeZoneName: 'short' })}</p>
+                    </div>
+                  </td>
+                  <td class="dataset-des">
+                    <h5>${user.NameUser}</h5>
+                    <p>${user.LastnameUser}</p>
+                  </td>
+                  <td>
+                  <div onclick="getContainersByUserSpecificId('${user.IdUser}')" class="edit"><a href="#">View Datasets</a></div>
+                  </td>
+                  <td>
+                    <div class="edit" data-userid="${user.IdUser}"><a href="#">Follow</a></div>
+                  </td>
+                </tr>`;
+        if (i == results.length - 1) {
+          html += '</tbody></table></dir>';
+          res.send(html);
+        }
+      }).catch(error => {
+        res.status(400).json({"error": error.message});
+      });
+    }
+  });
+});
+
+app.get('/getAllUsersMessages', function(req, res) {
+  connection.query(`SELECT * FROM UserDataHive WHERE IdUser != ?`, [currentLoggedInUser], function(error, results, fields) {
+    if (error) {
+      res.status(400).json({"error": error.message});
+      return;
+    }
+    let html = `<h2 class="i-subname">Users</h2><dir class="board"><table width="100%"><thead><tr><td>User</td><td colspan="3">Real Name</td></tr></thead><tbody>`;
+    for (let i = 0; i < results.length; i++) {
+      const row = results[i];
+      getUser(row.IdUser).then(user => {
+        html += `<tr>
+                  <td class="dataset">
+                    <img src="data:${user.avatarMimeType};base64,${user.avatarData.toString('base64')}"/>
+                    <div class="dataset-de">
+                      <h5>${user.UsernameUser}</h5>
+                      <p>${new Date(user.BirthDate).toLocaleString(undefined, { timeZone: 'UTC', hour12: false, timeZoneName: 'short' })}</p>
+                    </div>
+                  </td>
+                  <td class="dataset-des">
+                    <h5>${user.NameUser}</h5>
+                    <p>${user.LastnameUser}</p>
+                  </td>
+                  <td>
+                  <div onclick="getContainersByUserSpecificId('${user.IdUser}')" class="edit"><a href="#">View Datasets</a></div>
+                  </td>
+                  <td>
+                    <div class="edit" data-userid="${user.IdUser}"><a href="#">Follow</a></div>
+                  </td>
+                  <td>
+                  <div class="edit">
+                    <a href="specific_messages.html?selectedUser=${user.UsernameUser}&currentUser=${currentLoggedInUsername}">Message</a>
+                  </div>
+                  </td>
+                </tr>`;
+        if (i == results.length - 1) {
+          html += '</tbody></table></dir>';
+          res.send(html);
+        }
+      }).catch(error => {
+        res.status(400).json({"error": error.message});
+      });
+    }
+  });
+});
+
+app.get('/getUsersByUsernameMessages/:userName', function(req, res) {
+  searching = req.params.userName; 
+  console.log(searching);
+  connection.query(`SELECT * FROM UserDataHive WHERE UsernameUser = ? AND IdUser != ?`, [searching, currentLoggedInUser], function(error, results, fields) {
+    if (error) {
+      res.send("Cannot GET");
+      return;
+    }
+    if (results.length === 0) {
+      res.send('<h2 class="i-subname">There are no users with that username.</h2>');
+      return;
+    }
+    let html = `<h2 class="i-subname">Users with the Username <p style="color: #EAAA00;">${searching}</p></h2><dir class="board"><table width="100%"><thead><tr><td>User</td><td colspan="3">Real Name</td></tr></thead><tbody>`;
+    for (let i = 0; i < results.length; i++) {
+      const row = results[i];
+      getUser(row.IdUser).then(user => {
+        html += `<tr>
+                  <td class="dataset">
+                    <img src="data:${user.avatarMimeType};base64,${user.avatarData.toString('base64')}"/>
+                    <div class="dataset-de">
+                      <h5>${user.UsernameUser}</h5>
+                      <p>${new Date(user.BirthDate).toLocaleString(undefined, { timeZone: 'UTC', hour12: false, timeZoneName: 'short' })}</p>
+                    </div>
+                  </td>
+                  <td class="dataset-des">
+                    <h5>${user.NameUser}</h5>
+                    <p>${user.LastnameUser}</p>
+                  </td>
+                  <td>
+                  <div onclick="getContainersByUserSpecificId('${user.IdUser}')" class="edit"><a href="#">View Datasets</a></div>
+                  <td>
+                    <div class="edit" data-userid="${user.IdUser}"><a href="#">Follow</a></div>
+                  </td>
+                </tr>`;
+        if (i == results.length - 1) {
+          html += '</tbody></table></dir>';
+          res.send(html);
+        }
+      }).catch(error => {
+        res.status(400).send({"error": error.message});
+      });
+    }
+  });
+});
 app.get('/copy-dataset/:fileContainer', (req, res) => {
   const id = currentLoggedInUser;
   const fileContainerRID = req.params.fileContainer;
@@ -2397,41 +2727,48 @@ app.get('/getDownloadsData/:containerRid', async function(req, res) {
     const downloaders = await checkDownloaders(containerRid);
     console.log(downloaders);
     const downloaderIds = downloaders.map(downloader => downloader);
-    connection.query(`SELECT * FROM UserDataHive WHERE IdUser IN (?)`, [downloaderIds], async function(error, results, fields) {
-      if (error) {
-        res.status(400).json({"error": error.message});
-        return;
-      }
-      let html = `<h2 class="i-subname">Users</h2><dir class="board"><table width="100%"><thead><tr><td>User</td><td colspan="3">Real Name</td></tr></thead><tbody>`;
-      for (let i = 0; i < results.length; i++) {
-        const row = results[i];
-        const user = await getUser(row.IdUser);
-        html += `<tr>
-                  <td class="dataset">
-                    <img src="data:${user.avatarMimeType};base64,${user.avatarData.toString('base64')}"/>
-                    <div class="dataset-de">
-                      <h5>${user.UsernameUser}</h5>
-                      <p>${new Date(user.BirthDate).toLocaleString(undefined, { timeZone: 'UTC', hour12: false, timeZoneName: 'short' })}</p>
-                    </div>
-                  </td>
-                  <td class="dataset-des">
-                    <h5>${user.NameUser}</h5>
-                    <p>${user.LastnameUser}</p>
-                  </td>
-                  <td>
-                  <div onclick="getContainersByUserSpecificId('${user.IdUser}')" class="edit"><a href="#">View Datasets</a></div>
-                  </td>
-                </tr>`;
-        if (i == results.length - 1) {
-          html += '</tbody></table></dir>';
-          res.send(html);
+    if (downloaderIds.length > 0) {
+      connection.query(`SELECT * FROM UserDataHive WHERE IdUser IN (?)`, [downloaderIds], async function(error, results, fields) {
+        if (error) {
+          res.status(400).json({"error": error.message});
+          return;
         }
-      }
-    });
+        let html = `<h2 class="i-subname">Users</h2><dir class="board"><table width="100%"><thead><tr><td>User</td><td colspan="3">Real Name</td></tr></thead><tbody>`;
+        for (let i = 0; i < results.length; i++) {
+          const row = results[i];
+          const user = await getUser(row.IdUser);
+          html += `<tr>
+                    <td class="dataset">
+                      <img src="data:${user.avatarMimeType};base64,${user.avatarData.toString('base64')}"/>
+                      <div class="dataset-de">
+                        <h5>${user.UsernameUser}</h5>
+                        <p>${new Date(user.BirthDate).toLocaleString(undefined, { timeZone: 'UTC', hour12: false, timeZoneName: 'short' })}</p>
+                      </div>
+                    </td>
+                    <td class="dataset-des">
+                      <h5>${user.NameUser}</h5>
+                      <p>${user.LastnameUser}</p>
+                    </td>
+                    <td>
+                    <div onclick="getContainersByUserSpecificId('${user.IdUser}')" class="edit"><a href="#">View Datasets</a></div>
+                    </td>
+                  </tr>`;
+          if (i == results.length - 1) {
+            html += '</tbody></table></dir>';
+            res.send(html);
+          }
+        }
+      });
+    } else {
+      // Handle the case when downloaderIds is empty
+      console.log('The downloaderIds array is empty.');
+      res.status(400).send("error : The downloaderIds array is empty");
+    }
   } catch (error) {
     res.status(400).json({"error": error.message});
   }
 });
+
 
 // Start the server on port 3000
 app.listen(3000, function () {

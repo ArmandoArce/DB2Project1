@@ -104,7 +104,7 @@ const getComments = async (req, res) => {
     html += "<div class='associated-comments'>";
     for (let j = 0; j < relatedComments.length; j++) {
       html += `<div class='comment'>
-                  <p>${relatedComments[j].userId} Commented:</p>
+                  <p>${relatedComments[j].userId} Said:</p>
                   <p>${relatedComments[j].content}</p>
                   <div class='media'>`;
       for (let k = 0; k < relatedComments[j].media.length; k++) {
@@ -124,7 +124,7 @@ const getComments = async (req, res) => {
       <div class="comments-container">
       <div class="comments-section">
         <div id="NewCommentForm">
-          <label for="content">Answer this comment:</label>
+          <label for="content">Write an answer:</label>
           <textarea id="myContent" name="content" class="textarea"></textarea>
           <input type="hidden" id="responseTo" value="${comments[i].commentId}">
           <input type="hidden" id="NewMediaFC" name="media[]" multiple #content>

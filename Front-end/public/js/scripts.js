@@ -203,6 +203,17 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
+// This function waits for the page to load before calling getAllContainers, but only on the search-datasets.html
+document.addEventListener('DOMContentLoaded', function() {
+  if (window.location.href.indexOf('messages.html') > -1) {
+
+      getAllUsersMessages();
+      
+      // Add an event listener to the search button that calls the search function
+      document.getElementById('get-datasets-by-name-button').addEventListener('click', searchForMessages);
+  }
+});
+
 function toggleFollow(userId) {
   // Search the specific button
   const followButton = document.querySelector(`.edit[data-userid="${userId}"] a`);
@@ -513,7 +524,11 @@ function getAllDownloads(containerRid) {
       return response.text();
     })
     .then(function(html) {
-      document.getElementById('result-container').innerHTML = html;
+      if (html.includes("error : The downloaderIds array is empty.")) {
+        document.getElementById('result-container').innerHTML = '<h2 class="i-subname">There are no datasets with that description.</h2>';
+      } else {
+        document.getElementById('result-container').innerHTML = html;
+      }
     })
     .catch(function(err) {
       console.error(err);
@@ -547,7 +562,7 @@ function updateDatasetImage() {
     });
   
 }
-  
+
 /**
  * Sets up the event listener for the custom file input element, which allows users to select multiple files
  * and displays the file names on the page.
@@ -627,39 +642,100 @@ function editUser(event) {
   const lastName = document.getElementById("edit-last-name").value.trim();
   const password = document.getElementById("edit-password").value.trim();
   const birthday = document.getElementById("edit-birthday").value.trim();
+  const usernameInput = document.getElementById("edit-username");
+  const nameInput = document.getElementById("edit-name");
+  const lastNameInput = document.getElementById("edit-last-name");
+  const birthdayInput = document.getElementById("edit-birthday");
+
+  if (nameInput.value.trim() !== '' && !validateLettersOnly(nameInput)) {
+    Swal.fire(
+      'Error!',
+      'Please enter a valid name (only letters are allowed)',
+      'error'
+    );
+    return; // return immediately if validation fails
+  }
+  
+  if (lastNameInput.value.trim() !== '' && !validateLettersOnly(lastNameInput)) {
+    Swal.fire(
+      'Error!',
+      'Please enter a valid last name (only letters are allowed)',
+      'error'
+    );
+    return; // return immediately if validation fails
+  }
+  
+  if (usernameInput.value.trim() !== '' && !validateNoSpaces(usernameInput)) {
+    Swal.fire(
+      'Error!',
+      'Please remove any spaces from the username',
+      'error'
+    );
+    return; // return immediately if validation fails
+  }
+
+  if (birthdayInput.value.trim() !== '' && !validateDateNotAfterCurrentDate(birthdayInput)) {
+    Swal.fire(
+      'Error!',
+      'Please enter a valid date of birth',
+      'error'
+    );
+    return; // return immediately if validation fails
+  }
 
   // Send data to server
-  const xhr = new XMLHttpRequest();
-  const url = "http://localhost:3000/update-user";
-  xhr.open("POST", url, true);
-  xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
-  xhr.onreadystatechange = function () {
-    if (xhr.readyState === 4 && xhr.status === 200) {
-      const response = JSON.parse(xhr.responseText);
-      if (response.success) {
-          console.log('No file uploaded.');
+  // Check if username already exists
+  const xhrCheck = new XMLHttpRequest();
+  const urlCheck = "http://localhost:3000/check-username";
+  xhrCheck.open("POST", urlCheck, true);
+  xhrCheck.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+  xhrCheck.onreadystatechange = function () {
+    if (xhrCheck.readyState === 4 && xhrCheck.status === 200) {
+      const response = JSON.parse(xhrCheck.responseText);
+      if (response.exists) {
+        Swal.fire(
+          'Error!',
+          'Username already exists. Please choose a different one',
+          'error'
+        );
+      } else {
+        // Send data to server
+        const xhr = new XMLHttpRequest();
+        const url = "http://localhost:3000/update-user";
+        xhr.open("POST", url, true);
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        xhr.onreadystatechange = function () {
+          if (xhr.readyState === 4 && xhr.status === 200) {
+            const response = JSON.parse(xhr.responseText);
+            if (response.success) {
+                console.log('No file uploaded.');
+                editAvatar();
+                Swal.fire(
+                  'Update!',
+                  'Now you have new information!',
+                  'success'
+                )
+            }
+            else {
+              alert("Error updating user. Please try again.");
+            }
+          }
           editAvatar();
           Swal.fire(
             'Update!',
             'Now you have new information!',
             'success'
-          )
-      }
-      else {
-        alert("Error updating user. Please try again.");
+          ).then(() => {
+            window.location.href = "dashboard.html"; 
+          });
+        };
+        const data = JSON.stringify({NameUser: name, UsernameUser: username, LastnameUser: lastName, PasswordUser: password, BirthDate: birthday });
+        xhr.send(data);
       }
     }
-    editAvatar();
-    Swal.fire(
-      'Update!',
-      'Now you have new information!',
-      'success'
-    ).then(() => {
-      window.location.href = "dashboard.html"; 
-    });
   };
-  const data = JSON.stringify({NameUser: name, UsernameUser: username, LastnameUser: lastName, PasswordUser: password, BirthDate: birthday });
-  xhr.send(data);
+  const dataCheck = JSON.stringify({UsernameUser: username });
+  xhrCheck.send(dataCheck);
 }
 
 /**
@@ -807,7 +883,7 @@ function searchUsersByUsername() {
           // Search all buttons to follow an user
           const followButtons = document.querySelectorAll('.edit[data-userid]');
 
-          // Agrega un controlador de eventos a cada botón de seguimiento
+          // Add a controler for each button
           followButtons.forEach(button => {
             const userId = button.dataset.userid;
             toggleFollow(userId);
@@ -823,7 +899,169 @@ function searchUsersByUsername() {
       console.error(err);
     });
 }
-  
+
+// Define the searchUsersByName function
+function searchByUsername() {
+  const input = document.getElementById('search-criteria');
+  const searchTerm = input.value;
+  fetch(`http://localhost:3000/getUsersByUsernameMessages/${searchTerm}`)
+    .then(function(response) {
+      return response.text();
+    })
+    .then(function(html) {
+      // Check if the server response contains an error message
+      if (html.includes("Cannot GET")) {
+        document.getElementById('result-container').innerHTML = '<h2 class="i-subname">There are no users with that username.</h2>';
+      } else {
+        // Check if the table has images
+        const table = document.createElement('table');
+        table.innerHTML = html;
+        const images = table.querySelectorAll('img');
+        if (images.length === 0) {
+          document.getElementById('result-container').innerHTML = '<h2 class="i-subname">There are no users with that username.</h2>';
+        } else {
+          // Insert the server response HTML into the result container
+          document.getElementById('result-container').innerHTML = html;
+          // Search all buttons to follow an user
+          const followButtons = document.querySelectorAll('.edit[data-userid]');
+
+          // Add a controler for each button
+          followButtons.forEach(button => {
+            const userId = button.dataset.userid;
+            toggleFollow(userId);
+            button.addEventListener('click', () => {
+              const userId = button.dataset.userid;
+              toggleFollow(userId);
+            });
+          });
+        }
+      }
+    })
+    .catch(function(err) {
+      console.error(err);
+    });
+}
+
+// Define the searchUsersByName function
+function searchUserFollowers() {
+  const input = document.getElementById('search-criteria');
+  const searchTerm = input.value;
+  fetch(`http://localhost:3000/getUserFollowers`)
+    .then(function(response) {
+      return response.text();
+    })
+    .then(function(html) {
+      // Check if the server response contains an error message
+      if (html.includes("Cannot GET")) {
+        document.getElementById('result-container').innerHTML = '<h2 class="i-subname">You have no followers.</h2>';
+      } else {
+        // Check if the table has images
+        const table = document.createElement('table');
+        table.innerHTML = html;
+        const images = table.querySelectorAll('img');
+        if (images.length === 0) {
+          document.getElementById('result-container').innerHTML = '<h2 class="i-subname">You have no followers.</h2>';
+        } else {
+          // Insert the server response HTML into the result container
+          document.getElementById('result-container').innerHTML = html;
+        }
+      }
+    })
+    .catch(function(err) {
+      console.error(err);
+    });
+}
+
+// Define the searchUsersByName function
+function searchUserFollowing() {
+  const input = document.getElementById('search-criteria');
+  const searchTerm = input.value;
+  fetch(`http://localhost:3000/getFollowingData`)
+    .then(function(response) {
+      return response.text();
+    })
+    .then(function(html) {
+      // Check if the server response contains an error message
+      if (html.includes("Cannot GET")) {
+        document.getElementById('result-container').innerHTML = '<h2 class="i-subname">You are not following any users</h2>';
+      } else {
+        // Check if the table has images
+        const table = document.createElement('table');
+        table.innerHTML = html;
+        const images = table.querySelectorAll('img');
+        if (images.length === 0) {
+          document.getElementById('result-container').innerHTML = '<h2 class="i-subname">You are not following any users</h2>';
+        } else {
+          // Insert the server response HTML into the result container
+          document.getElementById('result-container').innerHTML = html;
+        }
+      }
+    })
+    .catch(function(err) {
+      console.error(err);
+    });
+}
+
+// Define the searchUsersByName function
+function searchUserFollowersMessages() {
+  const input = document.getElementById('search-criteria');
+  const searchTerm = input.value;
+  fetch(`http://localhost:3000/getUserFollowersMessages`)
+    .then(function(response) {
+      return response.text();
+    })
+    .then(function(html) {
+      // Check if the server response contains an error message
+      if (html.includes("Cannot GET")) {
+        document.getElementById('result-container').innerHTML = '<h2 class="i-subname">You have no followers.</h2>';
+      } else {
+        // Check if the table has images
+        const table = document.createElement('table');
+        table.innerHTML = html;
+        const images = table.querySelectorAll('img');
+        if (images.length === 0) {
+          document.getElementById('result-container').innerHTML = '<h2 class="i-subname">You have no followers.</h2>';
+        } else {
+          // Insert the server response HTML into the result container
+          document.getElementById('result-container').innerHTML = html;
+        }
+      }
+    })
+    .catch(function(err) {
+      console.error(err);
+    });
+}
+
+// Define the searchUsersByName function
+function searchUserFollowingMessages() {
+  const input = document.getElementById('search-criteria');
+  const searchTerm = input.value;
+  fetch(`http://localhost:3000/getFollowingDataMessages`)
+    .then(function(response) {
+      return response.text();
+    })
+    .then(function(html) {
+      // Check if the server response contains an error message
+      if (html.includes("Cannot GET")) {
+        document.getElementById('result-container').innerHTML = '<h2 class="i-subname">You are not following any users</h2>';
+      } else {
+        // Check if the table has images
+        const table = document.createElement('table');
+        table.innerHTML = html;
+        const images = table.querySelectorAll('img');
+        if (images.length === 0) {
+          document.getElementById('result-container').innerHTML = '<h2 class="i-subname">You are not following any users</h2>';
+        } else {
+          // Insert the server response HTML into the result container
+          document.getElementById('result-container').innerHTML = html;
+        }
+      }
+    })
+    .catch(function(err) {
+      console.error(err);
+    });
+}
+
 // Define the searchByDescription function
 function searchByDescriptionAndOwner() {
     const input = document.getElementById('search-criteria');
@@ -917,6 +1155,31 @@ function searchUsers() {
       searchUsersByUsername();
     } else if(searchOption === 'all') {
       getAllUsers();
+    } else if(searchOption === 'followers') {
+      searchUserFollowers();
+    } else if(searchOption === 'following') {
+      searchUserFollowing();
+    }
+}
+
+// Define the search function
+function searchForMessages() {
+
+  // Select the dropdown element
+  const select = document.getElementById('search-by');
+
+  // Get the selected search option from the dropdown
+  const searchOption = select.value;
+
+  // Call the appropriate search function based on the selected option
+   if (searchOption === 'name') {
+      searchByUsername();
+    } else if(searchOption === 'all') {
+      getAllUsersMessages();
+    } else if(searchOption === 'followers') {
+      searchUserFollowersMessages();
+    } else if(searchOption === 'following') {
+      searchUserFollowingMessages();
     }
 }
 
@@ -1004,6 +1267,55 @@ function preventBack(event) {
     window.location.href = "index.html";
 }
 
+// Validate that the input only contains letters (no numbers, special characters, etc.)
+function validateLettersOnly(input) {
+  const letters = /^[A-Za-z]+$/;
+  if (input.value.match(letters)) {
+    return true;
+  } else {
+    input.value = "";
+    input.placeholder = "Only letters allowed";
+    return false;
+  }
+}
+
+// Validate that the input does not contain spaces
+function validateNoSpaces(input) {
+  const noSpaces = /^\S*$/;
+  if (input.value.match(noSpaces)) {
+    return true;
+  } else {
+    input.value = "";
+    input.placeholder = "Spaces not allowed";
+    return false;
+  }
+}
+
+// Validate that the input only contains letters and specific characters (such as ñ, á, é, í, ó, ú, etc.)
+function validateLettersAndSpecificCharacters(input) {
+  const lettersAndSpecificCharacters = /^[A-Za-zñÑáéíóúÁÉÍÓÚüÜ\s]+$/;
+  if (input.value.match(lettersAndSpecificCharacters)) {
+    return true;
+  } else {
+    input.value = "";
+    input.placeholder = "Only letters and specific characters allowed";
+    return false;
+  }
+}
+
+// Validate that the input date is not after the current date
+function validateDateNotAfterCurrentDate(input) {
+  const selectedDate = new Date(input.value);
+  const currentDate = new Date();
+  if (selectedDate <= currentDate) {
+    return true;
+  } else {
+    input.value = "";
+    input.placeholder = "Selected date is after current date";
+    return false;
+  }
+}
+
 function registerUser(event) {
     event.preventDefault();
 
@@ -1015,7 +1327,12 @@ function registerUser(event) {
     const id = document.getElementById("sign-up-id").value.trim();
   
     // Validate inputs
-    if (!validateFormSingIn()) {
+    if (!validateFormSingIn() || !validateLettersOnly(document.getElementById("sign-up-name")) || !validateLettersOnly(document.getElementById("sign-up-last-name")) || !validateNoSpaces(document.getElementById("sign-up-username")) || !validateDateNotAfterCurrentDate(document.getElementById("sign-up-birthday"))) {
+      Swal.fire(
+        'Error!',
+        'Please enter valid information',
+        'error'
+      );
       return;
     }
   
@@ -1195,3 +1512,60 @@ document.addEventListener('DOMContentLoaded', function() {
     container.innerHTML = html;
   }
 });
+
+// This function sends a request to the server to get all containers, and then injects the resulting HTML into the page.
+function getAllUsersMessages() {
+  fetch('http://localhost:3000/getAllUsersMessages')
+    .then(function(response) {
+      return response.text();
+    })
+    .then(function(html) {
+      document.getElementById('result-container').innerHTML = html;
+      // Search all buttons to follow an user
+      const followButtons = document.querySelectorAll('.edit[data-userid]');
+
+      // Agrega un controlador de eventos a cada botón de seguimiento
+      followButtons.forEach(button => {
+        const userId = button.dataset.userid;
+        toggleFollow(userId);
+        button.addEventListener('click', () => {
+          const userId = button.dataset.userid;
+          toggleFollow(userId);
+        });
+      });
+    })
+    .catch(function(err) {
+      console.error(err);
+    });
+}
+
+// This function waits for the page to load before calling getAllContainers, but only on the index.html
+document.addEventListener('DOMContentLoaded', function() {
+  if (window.location.href.indexOf('specific_messages.html') > -1) {
+    setOwnerFromUrlParam('currentOwner', 'currentUser');
+    setOwnerFromUrlParam('currentChat', 'selectedUser');
+    // Get the values of currentOwner and currentChat
+    const currentOwner = document.getElementById('currentOwner').value;
+    const currentChat = document.getElementById('currentChat').value;
+
+    // Alphabetically sort the values of currentOwner and currentChat
+    const sortedValues = [currentOwner, currentChat].sort();
+
+    // Concatenate the sorted values into a single string
+    const combinedValue = sortedValues.join('');
+
+    // Set the value of an input field to the combined value
+    document.getElementById('currentDataset').value = combinedValue;
+  }
+});
+
+//To get owner for messages
+function setOwnerFromUrlParam(inputId, urlParamName) {
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramValue = urlParams.get(urlParamName);
+  if (paramValue !== null) {
+    const inputField = document.getElementById(inputId);
+    inputField.value = paramValue;
+  }
+}
+
